@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Obléhání pravdy</title>
+<style>
+:root{--bg:#0b1026;--bg2:#2a1b4d;--card:rgba(255,255,255,.07);--line:rgba(255,255,255,.14);--tx:#eef0ff;--mut:#a2abd6;--ac:#ffcf5a;--atk:#ff7a5c;--def:#4fd1c5;--inp:rgba(0,0,0,.28)}
+:root[data-theme=light]{--bg:#eef0fb;--bg2:#e3d9f3;--card:rgba(255,255,255,.85);--line:rgba(30,35,80,.14);--tx:#1b2040;--mut:#5d648c;--inp:rgba(255,255,255,.9)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--tx);font:16px/1.5 system-ui,-apple-system,sans-serif;background:radial-gradient(120% 80% at 50% 0,var(--bg2),var(--bg) 70%) fixed}
+main{max-width:640px;margin:0 auto;padding:22px 16px 56px}
+h1{font:800 clamp(2.3rem,9vw,3.5rem)/1.02 Georgia,serif;letter-spacing:-.02em;margin:18px 0 6px}
+h2{font:700 1.5rem Georgia,serif;margin:0 0 10px}
+.sub{color:var(--mut);margin:0 0 22px;max-width:46ch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin:14px 0;backdrop-filter:blur(8px)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:13px 18px;transition:transform .12s,border-color .12s}
+button:hover:not(:disabled){border-color:var(--ac);transform:translateY(-1px)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+button:disabled{opacity:.4;cursor:not-allowed}
+.main{background:var(--ac);color:#25190a;border-color:var(--ac);font-weight:700}
+.menu{display:grid;gap:12px}
+.menu button{padding:16px;font-size:1.1rem;text-align:center}
+input,select{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--inp);margin:6px 0 16px}
+select option{color:#111}
+label{font-size:.92rem;color:var(--mut)}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.back{background:none;border:none;color:var(--mut);padding:4px 0 10px}
+.scene{display:block;width:100%;height:auto;border-radius:20px;border:1px solid var(--line)}
+.code{font:800 2.8rem Georgia,serif;letter-spacing:.28em;color:var(--ac)}
+.q{font:1.4rem/1.35 Georgia,serif;margin:6px 0 18px}
+.turn.A,.turn.A1,.turn.A2,.turn.A3{border-left:4px solid var(--atk)}.turn.D{border-left:4px solid var(--def)}
+.msg{color:var(--mut);margin:10px 0}
+.pill{font-size:.88rem;color:var(--mut)}
+.ov{position:fixed;inset:0;background:rgba(5,8,24,.7);display:grid;place-items:center;padding:16px;z-index:5}
+.modal{width:100%;max-width:380px;background:var(--bg2)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+
+.menu .main{font-size:1.25rem;padding:18px}
+.card{position:relative;overflow:hidden}
+.sc{position:relative}
+.bar{height:8px;border-radius:6px;background:var(--line);margin:12px 0;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--ac)}
+.opts{display:grid;gap:8px;margin-top:10px}
+.opt{display:flex;gap:12px;align-items:center;text-align:left;width:100%}
+.opt small{color:var(--mut)}.opt .ic{font-size:1.6rem}
+.pop{position:fixed;left:50%;top:20%;translate:-50% 0;z-index:7;pointer-events:none;text-align:center;background:var(--bg2);border:2px solid var(--ac);border-radius:20px;padding:18px 26px;min-width:250px;max-width:min(90vw,460px);box-shadow:0 20px 60px #000a;animation:pp 3s both}
+.pop b{display:block;font:800 1.5rem Georgia,serif}.pop span{color:var(--mut)}
+@keyframes pp{0%{opacity:0;scale:.6}10%{opacity:1;scale:1.05}16%{scale:1}85%{opacity:1}100%{opacity:0;scale:.95}}
+.ab{position:relative;min-height:56px}
+.tpw{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:space-around;animation:gone .3s forwards}
+.tp{width:114%;margin-left:-7%;height:34%;background:repeating-linear-gradient(90deg,#e8dab2 0 26px,#d6c48e 26px 28px);box-shadow:0 2px 8px #0008;display:grid;place-items:center;font-weight:800;letter-spacing:.4em;color:#8a7a4d;animation:tin .35s both}
+.tp:nth-child(1){rotate:-4deg}.tp:nth-child(2){rotate:3deg;animation-delay:.12s}.tp:nth-child(3){rotate:-2deg;animation-delay:.24s}
+@keyframes tin{from{opacity:0;translate:-120% 0}to{opacity:1;translate:0}}
+@keyframes gone{to{opacity:0;visibility:hidden}}
+.dz main{animation:dzb 2.4s ease-in-out infinite}
+.dz .card,.dz .scene{animation:sway 2.6s ease-in-out infinite}
+.dz .grid2 button{animation:drift 1.9s ease-in-out infinite}.dz .grid2 button:nth-child(2){animation-direction:reverse}
+.dzc{display:inline-block;font-style:normal;animation:bob 1.1s ease-in-out infinite}
+.dz::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:6;background:radial-gradient(circle at 50% 45%,transparent 22%,#000 82%);animation:tun 3.2s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-4deg) translateX(-12px)}50%{transform:rotate(4deg) translateX(12px)}}
+@keyframes dzb{0%,100%{filter:blur(.6px) saturate(.8)}50%{filter:blur(3px) saturate(.35)}}
+@keyframes drift{0%,100%{transform:translate(-14px,3px)}50%{transform:translate(14px,-3px)}}
+@keyframes bob{0%,100%{transform:translateY(-4px) rotate(-9deg)}50%{transform:translateY(4px) rotate(9deg)}}
+@keyframes tun{0%,100%{opacity:.2}50%{opacity:.85}}
+.spy{position:absolute;inset:0;z-index:3;background:rgba(0,0,0,.78);border-radius:14px;display:grid;place-items:center;text-align:center;padding:8px;color:#fff}
+.sp{font-size:2.6rem;animation:spy .8s cubic-bezier(.2,1.2,.4,1) both}
+@keyframes spy{from{translate:140% 0;opacity:0}}
+.cf{position:absolute;inset:-6px;z-index:2;pointer-events:none;font-size:2.4rem;display:grid;place-items:center;background:radial-gradient(circle at 30% 40%,#5a3a22d0 0 26%,transparent 27%),radial-gradient(circle at 72% 58%,#6b4428d0 0 22%,transparent 23%);animation:spl .5s both}
+@keyframes spl{from{opacity:0;scale:.3}}
+.pb{background:#fff;color:#222;border-radius:14px;padding:6px 12px;display:inline-block;margin-bottom:8px;animation:pp2 .4s both}
+@keyframes pp2{from{opacity:0;translate:0 10px}}
+.boulder{position:absolute;font-size:30px;transform:translate(-50%,-50%);z-index:3;transition:left .9s linear,top .9s cubic-bezier(.3,-.8,.7,1)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.av{display:inline-grid;place-items:center;border-radius:50%;object-fit:cover;background:var(--line);font-weight:700;flex:none}
+.tg{display:inline-block;font-size:.72rem;font-weight:700;padding:1px 9px;border-radius:99px;background:var(--ac);color:#25190a;margin-left:7px;vertical-align:middle}
+.chip{display:flex;align-items:center;gap:10px}
+input,select,textarea{font:inherit;color:inherit}
+textarea{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--inp);margin:6px 0 16px;resize:vertical}
+.card.vis{overflow:visible}
+.dd{position:relative;margin-top:6px}
+.ddb{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 14px;background:var(--inp)}
+.ddb span,.ddo{display:grid}
+.dd small{color:var(--mut);font-size:.82rem;font-weight:400}
+.chev{width:9px;height:9px;border-right:2px solid var(--mut);border-bottom:2px solid var(--mut);rotate:45deg;translate:0 -2px;transition:rotate .2s;flex:none}
+.dd.open .chev,.advb.open .chev{rotate:225deg;translate:0 2px}
+.ddl{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:4;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 14px 40px #0009}
+.dd.open .ddl{display:grid;gap:4px}
+.ddo{text-align:left;border:none;background:transparent;padding:10px 12px;border-radius:10px}
+.ddo:hover:not(:disabled){background:var(--card)}
+.ddo.sel{background:var(--card);box-shadow:inset 3px 0 0 var(--ac)}
+.advb{display:flex;justify-content:space-between;align-items:center;width:100%;margin-top:14px;background:transparent}
+.adv{display:none;padding-top:12px}.adv.open{display:block}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
+.chp{padding:8px 14px;border-radius:99px}
+.chp.on{background:var(--ac);color:#25190a;border-color:var(--ac);font-weight:700}
+.tabs{margin:0 0 14px}
+.bell{position:relative;padding:8px 12px;border-radius:99px}
+.bell b{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;border-radius:99px;background:var(--atk);color:#fff;font-size:.72rem;display:grid;place-items:center}
+.fab{position:fixed;right:20px;bottom:20px;width:52px;height:52px;border-radius:50%;font:800 1.4rem Georgia,serif;padding:0;background:var(--ac);color:#25190a;border-color:var(--ac);box-shadow:0 8px 24px #0008;z-index:3}
+.lb{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;border:1px solid transparent}
+.lb.me{background:var(--card);border-color:var(--ac);box-shadow:inset 4px 0 0 var(--ac)}
+.rk{width:34px;font-weight:800;color:var(--mut)}.lb.me .rk{color:var(--ac)}
+.lbn{flex:1;min-width:0}.pts{font-weight:700}
+.you{margin-left:8px;font-size:.72rem;color:var(--ac);font-weight:800}
+.sw{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.swb{width:36px;height:36px;border-radius:50%;padding:0;border:2px solid transparent}
+.swb.on{border-color:var(--tx);box-shadow:0 0 0 3px var(--bg2)}
+.swb.none{background:var(--card);font-weight:800}
+.prev{margin:6px 0 14px;padding:12px;border-radius:12px;background:var(--inp)}
+.unread{border-color:var(--ac)}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<div id="toast" role="status"></div>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getDatabase,ref,set,get,update,remove,onValue,serverTimestamp,push,runTransaction,query,orderByChild,limitToLast} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut,onAuthStateChanged,deleteUser} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyC-CIV9FpMHy67izoGPxYxUVlI-ZWB4Wi0",
+  authDomain: "nenaser-se.firebaseapp.com",
+  databaseURL: "https://nenaser-se-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "nenaser-se",
+  appId: "1:771972269804:web:333862bd4a0e9ed48e07c9"
+};
+
+/* Zástupné otázky – t = tvrzení, a = pravda (true) / lež (false), e = vysvětlení */
+const BQ = [
+  {t:"Podle výzkumu RILSA mělo 59 % Romů ve věku 20–64 let maximálně základní vzdělání.",a:true,e:"Zdroj doplníme (RILSA)."},
+  {t:"Osm z deseti Romů v ČR má nejvýše základní vzdělání.",a:false,e:"Zdroj doplníme (RILSA)."},
+  {t:"48 % romských respondentů, kteří hledali bydlení, uvedlo, že se k nim někdo choval hůře kvůli jejich původu.",a:true,e:"Zdroj doplníme."},
+  {t:"V roce 2025 bylo v ČR trestně stíháno přes 4 000 občanů Ukrajiny.",a:true,e:"Zdroj doplníme (policejní statistika)."},
+  {t:"Kvůli Ukrajincům vzrostl v roce 2025 celkový počet registrovaných trestných činů v ČR o 3 000.",a:false,e:"Zdroj doplníme (policejní statistika)."},
+  {t:"Ukrajinci tvořili v roce 2025 více než 20 % všech trestně stíhaných osob v ČR.",a:false,e:"Zdroj doplníme (policejní statistika)."},
+  {t:"Počet trestně stíhaných Ukrajinců v ČR vzrostl mezi roky 2021 a 2024 o více než 100 %.",a:true,e:"Zdroj doplníme (policejní statistika)."},
+  {t:"Cizinci v České republice se podílejí na celkovém počtu trestných činů vyšším procentem, než jaký je jejich podíl v české populaci.",a:true,e:"Cizinci tvoří zhruba 10–11 % obyvatel a 12–14 % stíhaných osob. Nejčastěji jde o porušení pobytového režimu a řízení pod vlivem alkoholu, ne o násilnou kriminalitu."},
+  {t:"Ukrajinští uprchlíci v ČR vyčerpají na sociálních dávkách ze státního rozpočtu více peněz, než kolik do něj odvedou na daních a odvodech.",a:false,e:"Podle bilancí MPSV se situace otočila v druhé polovině roku 2023 a od roku 2024 jsou příjmy státu od uprchlíků vyšší než výdaje na dávky, zdravotnictví a školství."},
+  {t:"Ve Švédsku se od roku 2013 zdvojnásobil počet smrtelných střeleb při vyřizování účtů mezi gangy.",a:true,e:"Podle Brå se Švédsko posunulo z nejnižších míst v Evropě na špičku v počtu střelných úmrtí. Zprávy to spojují s bojem gangů v sociálně vyloučených předměstích."},
+  {t:"Více než polovina romských dětí v ČR stále navštěvuje základní školy nebo třídy pro děti s lehkým mentálním postižením.",a:false,e:"Podle ombudsmana a ČŠI je podíl kolem 25–30 %, tedy stále extrémně vysoký, ale ne víc než polovina."},
+  {t:"Ve Francii a Německu tvoří cizinci a lidé s migračním původem více než polovinu všech vězňů.",a:false,e:"V Německu tvoří cizinci zhruba 35–38 % vězňů, ve Francii kolem 25 %. Přes 50 % to v některých věznicích u velkých měst vychází jen při započtení druhé generace."},
+  {t:"Podle průzkumů FRA žije více než 80 % Romů v ČR pod hranicí chudoby.",a:true,e:"Podle FRA Roma Survey je to zhruba 80–85 % (u většinové populace kolem 9–10 %)."},
+  {t:"Počet žadatelů o azyl v EU dosáhl v letech 2023–2024 nejvyšší úrovně od migrační krize v roce 2015.",a:true,e:"Podle EUAA bylo v roce 2023 podáno přes 1,14 milionu žádostí, v roce 2024 kolem 1 milionu."},
+  {t:"Většina migrantů, kterým státy EU nařídí vyhoštění, Evropu skutečně opustí.",a:false,e:"Podle Eurostatu je skutečně navráceno jen kolem 20–25 % lidí s rozhodnutím o vyhoštění."},
+  {t:"Petr Pavel byl za komunismu člen StB.",a:false,e:"Podle dostupných dokladů nebyl členem StB. Byl členem KSČ a absolvoval kurz komunistické vojenské rozvědky, která spadala pod armádu."},
+  {t:"Velká čínská zeď je viditelná pouhým okem z Měsíce.",a:false,e:"Z Měsíce není vidět, je příliš úzká."},
+  {t:"Voda se při zamrznutí rozpíná.",a:true,e:"Led má větší objem než voda."},
+  {t:"Netopýři jsou slepí.",a:false,e:"Vidí, mnozí dobře, a navíc používají echolokaci."},
+  {t:"Blesk nikdy neudeří dvakrát do stejného místa.",a:false,e:"Do vysokých budov udeří i několikrát za rok."},
+  {t:"Česko mělo v roce 2024 čtvrtou nejvyšší míru vězněných osob v EU.",a:true,e:"Zdroj doplníme."},
+  {t:"V českých věznicích tvoří ženy více než 20 % vězňů.",a:false,e:"Zdroj doplníme."},
+  {t:"V Česku bylo v roce 2025 celkem 49 lidí odsouzených na doživotí.",a:true,e:"Zdroj doplníme."},
+  {t:"Průměrná délka vazby v Česku přesáhla v roce 2025 pět měsíců.",a:true,e:"Zdroj doplníme."},
+  {t:"V Česku se v roce 2025 narodilo méně než 80 000 dětí.",a:true,e:"Zdroj doplníme."},
+  {t:"V roce 2025 se v ČR uskutečnilo nejméně svateb od konce první světové války.",a:true,e:"Zdroj doplníme."},
+  {t:"Čtyři z deseti manželství uzavřených v roce 2025 se ještě v témže roce rozvedla.",a:false,e:"Zdroj doplníme."},
+  {t:"Češi v roce 2023 prohráli v hazardních hrách přes 873 miliard korun.",a:false,e:"Přes 873 miliard korun bylo do her vloženo, ne prohráno."},
+  {t:"V roce 2023 bylo do českých hazardních her vloženo přes 873 miliard korun.",a:true,e:"Zdroj doplníme."},
+  {t:"V roce 2023 připadalo vklady do hazardních her přibližně 80 000 Kč na každého obyvatele ČR.",a:true,e:"Zdroj doplníme."},
+  {t:"V roce 2024 čeští hráči skutečně prohráli na hazardu přes 65 miliard korun.",a:true,e:"Zdroj doplníme."},
+  {t:"Česko mělo v roce 2024 největší rozdíl mezi průměrnými hodinovými výdělky mužů a žen ze všech zemí EU.",a:false,e:"Zdroj doplníme."},
+  {t:"Česko mělo v roce 2024 druhý největší neupravený rozdíl v průměrných hodinových výdělcích mužů a žen v EU.",a:true,e:"Zdroj doplníme."},
+  {t:"Na jaře 2026 bylo s politickou situací v ČR spokojeno pouze 14 % občanů.",a:true,e:"Zdroj doplníme."},
+  {t:"V březnu a dubnu 2026 důvěřovalo české vládě více než 60 % občanů.",a:false,e:"Zdroj doplníme."},
+  {t:"V listopadu a prosinci 2025 důvěřovalo prezidentovi 58 % českých občanů.",a:true,e:"Zdroj doplníme."},
+  {t:"V listopadu a prosinci 2025 nedůvěřovalo tehdejší vládě více než 50 % dotázaných.",a:true,e:"Zdroj doplníme."}
+];
+const AN = q => (q.a ? "Pravda. " : "Lež. ") + q.e;
+let DBQ = [];
+const allQ = () => [...BQ.map((q,i) => ({id:"b"+i, ...q})), ...DBQ];
+const pick = () => { const all = allQ(), seen = (room.seen||"").split(",").filter(Boolean); let pool = all.filter(q => !seen.includes(q.id)); const reset = !pool.length; if(reset) pool = all;
+  const q = pool[Math.random()*pool.length|0]; return {qq:{t:q.t, a:q.a, e:q.e}, seen: reset ? q.id : [...seen, q.id].join(",")}; };
+const WIN = 10, MAX_TURNS = 24;
+
+const fbApp = initializeApp(FIREBASE_CONFIG), db = getDatabase(fbApp), auth = getAuth(fbApp);
+const S = JSON.parse(localStorage.getItem("hra") || "{}");
+S.id = S.id || Math.random().toString(36).slice(2, 10);
+S.name = S.name || ""; S.theme = S.theme || "dark";
+S.gid = S.gid || S.id; S.id = S.gid;
+const save = () => localStorage.setItem("hra", JSON.stringify(S));
+const applyTheme = () => document.documentElement.dataset.theme = S.theme;
+save(); applyTheme();
+
+const $ = s => document.querySelector(s), app = $("#app");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const multi = m => m.mode === "1v3" || m.mode === "2v1";
+const capOf = m => m === "1v3" ? 4 : m === "2v1" ? 3 : 2;
+const rolesOf = m => m === "1v3" ? ["A1","A2","A3","D"] : m === "2v1" ? ["A1","A2","D"] : ["A","D"];
+const ATT = m => rolesOf(m).filter(r => r !== "D");
+const roleName = r => r === "D" ? "Obránce" : "Útočník" + (r.length > 1 ? " " + r[1] : "");
+let unsub = null, room = null, code = null, modalRes = null;
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("show"),2600)}
+const stop = () => { if(unsub){unsub();unsub=null} };
+
+/* ---------- Ilustrace: cesta, hrad a figurky ---------- */
+const PT = i => ({x:44+i*42, y:176+9*Math.sin(i*.9)});
+const tf = i => { const p = PT(i); return `translate(${p.x}px,${p.y-4}px)`; };
+const mer = (x,y,n) => Array.from({length:n},(_,i)=>`<rect x="${x+i*12}" y="${y}" width="7" height="8" fill="#6a6f9c"/>`).join("");
+const pawn = (c,t,id,extra) => `<g ${id?`id="${id}"`:""} style="transform:${t};transition:transform .8s cubic-bezier(.3,1.35,.5,1)"><ellipse cy="2" rx="11" ry="3" fill="#0007"/><path d="M-9 0Q-9 -17 0 -19Q9 -17 9 0Z" fill="${c}"/><circle cy="-27" r="8" fill="${c}" stroke="#fff8" stroke-width="1.5"/>${extra}</g>`;
+function scene(p, live){
+  let stones = ""; for(let i=0;i<=WIN;i++){const q=PT(i);stones+=`<ellipse cx="${q.x}" cy="${q.y}" rx="11" ry="4.5" fill="${i===WIN?"#ffcf5a":"#c9b78d"}" opacity=".85"/>`}
+  const stars = [[200,30],[260,62],[330,24],[420,50],[520,20],[600,54],[150,72]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.5" fill="#fff" opacity=".8"/>`).join("");
+  return `<svg viewBox="0 0 640 240" class="scene" role="img" aria-label="Cesta k hradu">
+  <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1030"/><stop offset=".65" stop-color="#4b2c6e"/><stop offset="1" stop-color="#e98a5c"/></linearGradient></defs>
+  <rect width="640" height="240" fill="url(#sky)"/>${stars}<circle cx="80" cy="46" r="20" fill="#fff3cf"/>
+  <path d="M0 190Q130 140 270 182T640 160V240H0Z" fill="#241d4d"/><path d="M0 215Q170 185 330 208T640 198V240H0Z" fill="#161233"/>
+  ${stones}
+  <rect x="498" y="112" width="116" height="92" fill="#575c8a"/>${mer(522,104,6)}
+  <rect x="482" y="70" width="36" height="134" fill="#6a6f9c"/><rect x="594" y="70" width="36" height="134" fill="#6a6f9c"/>
+  <path d="M478 70L500 36L522 70Z" fill="#c8453b"/><path d="M590 70L612 36L634 70Z" fill="#c8453b"/>
+  <path d="M500 36V18l14 5-14 5" fill="#ffcf5a"/><path d="M612 36V18l14 5-14 5" fill="#ffcf5a"/>
+  <rect x="497" y="100" width="6" height="12" rx="3" fill="#ffcf5a"/><rect x="609" y="100" width="6" height="12" rx="3" fill="#ffcf5a"/>
+  <path d="M536 204V172Q556 146 576 172V204Z" fill="#120d24"/><circle cx="556" cy="184" r="4" fill="#ffcf5a" opacity=".85"/>
+  ${pawn("#4fd1c5","translate(556px,112px)","", '<path d="M-17 -16h11v11q-5.5 5-11 0z" fill="#fff" opacity=".9"/>')}
+  ${pawns(p,live)}
+  </svg>`;
+}
+
+/* ---------- Okno s přezdívkou ---------- */
+function askName(){
+  if(U) return Promise.resolve(U.name);
+  return new Promise(res => {
+    modalRes = res;
+    const d = document.createElement("div"); d.className = "ov"; d.id = "modal";
+    d.innerHTML = `<div class="card modal" role="dialog" aria-label="Přezdívka"><h2>Jak ti říkat?</h2>
+      <label for="mn">Přezdívka uvidí soupeř</label><input id="mn" maxlength="16" value="${esc(S.name)}" autocomplete="off">
+      <div class="grid2"><button data-act="mcancel">Zrušit</button><button class="main" data-act="mok">Pokračovat</button></div></div>`;
+    document.body.appendChild(d); $("#mn").focus();
+  });
+}
+function closeModal(v){ const m = $("#modal"); if(m) m.remove(); if(modalRes){ modalRes(v); modalRes = null; } }
+
+/* ---------- Obrazovky ---------- */
+function menu(){
+  stop(); room = null; code = null; document.body.classList.remove("dz");
+  const chip = U ? `<div class="chip" style="margin:0 0 14px">${avatarHTML(U.avatar, U.name, 38)}<span><strong>${nmC(U.name, U.nc)}</strong>${tagB(U.tag)}<br><span class="pill">${U.points} bodů</span></span><span style="margin-left:auto">${bell()}</span></div>` : "";
+  app.innerHTML = `${scene(0,false)}
+    <h1>Obléhání pravdy</h1>
+    <p class="sub">Souboj dvou hráčů o hrad. Kdo pozná pravdu, ten postupuje. Kdo se splete, stojí na místě.</p>
+    ${chip}<div class="menu">
+      <button class="main" data-act="find">Najít hru</button>
+      <div class="grid2"><button data-act="create">Vytvořit hru</button><button data-act="${U ? "account" : "login"}">${U ? "Můj účet" : "Přihlásit se"}</button></div>
+      <button class="back" data-act="theme">Světlý / tmavý vzhled</button>
+    </div><button class="fab" data-act="contact" aria-label="Kontakt a nápady">?</button>`;
+}
+function find(){
+  app.innerHTML = `<button class="back" data-act="menu">← Zpět do menu</button>
+    <h2>Najít hru</h2>
+    <div class="card"><label for="jc">Mám kód od kamaráda</label>
+      <div class="row"><input id="jc" maxlength="4" placeholder="ABCD" style="margin:0;text-transform:uppercase">
+      <button class="main" data-act="joincode">Připojit se</button></div></div>
+    <h2 style="margin-top:26px">Veřejné hry</h2><div id="list"><p class="pill">Načítám…</p></div>`;
+  stop();
+  unsub = onValue(ref(db, "rooms"), s => {
+    const v = s.val() || {}, el = $("#list"); if(!el) return;
+    const open = Object.entries(v).filter(([,r]) => r.status === "lobby" && r.public !== false && Object.keys(r.players||{}).length < capOf(r.mode));
+    el.innerHTML = open.length ? open.map(([c,r]) => `
+      <div class="card row"><div><strong>${esc(r.name)}</strong><div class="pill">${(r.mode === "1v3" || r.mode === "2v1") ? modeLabel(r.mode) + " · " + Object.keys(r.players).length + "/" + capOf(r.mode) : "1v1"} · hostitel ${esc(Object.values(r.players)[0].name)}</div></div>
+      <button class="main" data-act="join" data-code="${c}">Hrát</button></div>`).join("")
+      : '<div class="card pill">Žádná veřejná hra zrovna nečeká. Vytvoř vlastní a pozvi někoho kódem.</div>';
+  });
+}
+const cfg = {mode:"1v1", pub:"1", ms:"20", mr:"20", gd:"1", kind:"idea"};
+const modeLabel = m => m === "1v3" ? "3v1" : m;
+const DD = {
+  mode:[{v:"1v1",t:"1v1",d:"Útočník proti obránci"},{v:"2v1",t:"2v1",d:"Dva útočníci proti obránci, body dostane jen nejrychlejší"},{v:"1v3",t:"3v1",d:"Tři útočníci proti obránci"},{v:"x",t:"Ostatní režimy",d:"Již brzy",dis:true}],
+  pub:[{v:"1",t:"Veřejná",d:"Zobrazí se v seznamu her"},{v:"0",t:"Soukromá",d:"Najdou ji jen lidé s kódem"}],
+  kind:[{v:"idea",t:"Nápad",d:"Co by se ti ve hře líbilo"},{v:"bug",t:"Nahlášení chyby",d:"Něco nefunguje"},{v:"other",t:"Jiné",d:"Cokoli dalšího"}]
+};
+const ddHTML = id => { const o = DD[id], cur = o.find(x => x.v === cfg[id]) || o[0];
+  return `<div class="dd" data-dd="${id}"><button type="button" class="ddb" data-act="ddt"><span><b>${cur.t}</b><small>${cur.d}</small></span><i class="chev"></i></button>
+  <div class="ddl">${o.map(x => `<button type="button" class="ddo${x.v === cfg[id] ? " sel" : ""}" data-act="ddo" data-v="${x.v}" ${x.dis ? "disabled" : ""}><b>${x.t}</b><small>${x.d}</small></button>`).join("")}</div></div>`; };
+const chips = (id, vals, fmt) => `<div class="chips" data-ch="${id}">${vals.map(v => `<button type="button" class="chp${cfg[id] === String(v) ? " on" : ""}" data-act="chp" data-v="${v}">${fmt(v)}</button>`).join("")}</div>`;
+function create(){
+  Object.assign(cfg, {mode:"1v1", pub:"1", ms:"20", mr:"20", gd:"1"});
+  app.innerHTML = `<button class="back" data-act="menu">← Zpět do menu</button><h2>Vytvořit hru</h2>
+    <div class="card vis"><label for="rn">Název hry</label><input id="rn" maxlength="30" placeholder="Např. Souboj o hrad">
+    <label>Kdo se může připojit</label>${ddHTML("pub")}<div style="height:16px"></div>
+    <label>Režim</label>${ddHTML("mode")}
+    <button type="button" class="advb" data-act="adv"><span>Podrobnější nastavení</span><i class="chev"></i></button>
+    <div class="adv" id="adv"><label>Čas na otázku</label>${chips("ms", [10,15,20,30,45,60], v => v + " s")}
+      <label>Počet kol</label>${chips("mr", [10,15,20,30,40], v => v)}
+      <label>Vylepšováky</label>${chips("gd", ["1","0"], v => v === "1" ? "Zapnuté" : "Vypnuté")}</div>
+    <button class="main" data-act="docreate" style="width:100%;margin-top:16px">Vytvořit hru</button></div>`;
+}
+/* ---------- Účty ---------- */
+let U = null, regBusy = false, goMenu = true;
+const paid = {};
+const mail = n => n.toLowerCase() + "@nenaser-se.web.app";
+const NAMEOK = n => n.length >= 3 && n.length <= 16 && /^[A-Za-z0-9]+([_.-][A-Za-z0-9]+)*$/.test(n);
+const OKAV = /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/;
+const tagB = t => t ? `<span class="tg">${esc(t)}</span>` : "";
+const avatarHTML = (a, n, sz = 40) => OKAV.test(a || "")
+  ? `<img class="av" style="width:${sz}px;height:${sz}px" src="${a}" alt="">`
+  : `<span class="av" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz*.45)}px">${esc((n || "?")[0].toUpperCase())}</span>`;
+const authErr = e => ({"auth/invalid-credential":"Špatné jméno nebo heslo","auth/invalid-login-credentials":"Špatné jméno nebo heslo","auth/user-not-found":"Špatné jméno nebo heslo","auth/wrong-password":"Špatné jméno nebo heslo",
+  "auth/email-already-in-use":"Toto jméno je už obsazené","auth/weak-password":"Heslo musí mít aspoň 6 znaků","auth/too-many-requests":"Příliš mnoho pokusů, zkus to později",
+  "auth/operation-not-allowed":"V Firebase není zapnuté přihlášení e-mailem a heslem"}[e.code] || "Něco se nepovedlo (" + (e.code || e.message) + ")");
+async function loadUser(fu){
+  const [p, a] = await Promise.all([get(ref(db, "users/" + fu.uid)), get(ref(db, "admins/" + fu.uid))]);
+  if(!p.exists()){ await signOut(auth); return false; }
+  const v = p.val(); U = {uid:fu.uid, name:v.name, avatar:v.avatar || null, points:v.points || 0, tag:v.tag || null, nc:v.nc || null, ncOwned:!!v.ncOwned, admin:a.exists()};
+  if(U.admin && !U.tag){ U.tag = "Majitel"; update(ref(db, "users/" + fu.uid), {tag:"Majitel"}).catch(() => {}); }
+  S.id = fu.uid; subInbox(); return true;
+}
+onAuthStateChanged(auth, async fu => {
+  if(regBusy) return;
+  if(fu){ const ok = await loadUser(fu); if(!ok){ U = null; S.id = S.gid; toast("Tento účet byl smazán"); } }
+  else { U = null; S.id = S.gid; subInbox(); }
+  if(goMenu && !room){ goMenu = false; menu(); }
+});
+onValue(ref(db, "questions"), s => {
+  DBQ = Object.entries(s.val() || {}).map(([k, v]) => ({id:"d" + k, t:v.t, a:!!v.a, e:v.e || ""}));
+  renderAdminQ();
+}, () => {});
+function login(){
+  app.innerHTML = `<button class="back" data-act="menu">← Zpět do menu</button><h2>Přihlásit se</h2>
+    <div class="card"><label for="ln">Jméno</label><input id="ln" maxlength="16" autocomplete="username" placeholder="3 až 16 znaků: písmena, čísla, . _ -">
+    <label for="lp">Heslo</label><input id="lp" type="password" autocomplete="current-password" placeholder="aspoň 6 znaků">
+    <div class="grid2"><button class="main" data-act="dologin">Přihlásit se</button><button data-act="doreg">Vytvořit účet</button></div></div>
+    <p class="pill">S účtem se nemusíš pořád ptát na přezdívku, můžeš mít profilovku a za výhry sbíráš body.</p>`;
+}
+async function doLogin(){
+  const n = $("#ln").value.trim(), p = $("#lp").value;
+  if(!NAMEOK(n)) return toast("Jméno: 3 až 16 znaků, písmena, čísla, . _ -");
+  goMenu = true;
+  try{ await signInWithEmailAndPassword(auth, mail(n), p); } catch(e){ goMenu = false; toast(authErr(e)); }
+}
+async function doReg(){
+  const n = $("#ln").value.trim(), p = $("#lp").value;
+  if(!NAMEOK(n)) return toast("Jméno: 3 až 16 znaků, písmena, čísla, . _ -");
+  if(p.length < 6) return toast("Heslo musí mít aspoň 6 znaků");
+  regBusy = true;
+  try{
+    const c = await createUserWithEmailAndPassword(auth, mail(n), p);
+    try{ await set(ref(db, "users/" + c.user.uid), {name:n, points:0, created:Date.now()}); }
+    catch(e){ await deleteUser(c.user).catch(() => {}); throw {code:"", message:"profil se nepodařilo uložit, zkontroluj pravidla databáze"}; }
+    await loadUser(c.user); regBusy = false; menu(); toast("Účet vytvořen");
+  } catch(e){ regBusy = false; toast(authErr(e)); }
+}
+const nmC = (n, c) => /^#[0-9a-fA-F]{6}$/.test(c || "") ? `<span style="color:${c}">${esc(n)}</span>` : esc(n);
+let inbox = [], inboxUn = null, inboxN = 0, acTab = "p", shopCol = null, attach = null;
+const bell = () => U ? `<button class="bell" data-act="inbox" aria-label="Oznámení">🔔${inboxN ? `<b>${inboxN}</b>` : ""}</button>` : "";
+function subInbox(){
+  if(inboxUn){ inboxUn(); inboxUn = null; } inbox = []; inboxN = 0;
+  if(!U) return;
+  inboxUn = onValue(ref(db, "inbox/" + U.uid), s => {
+    inbox = Object.entries(s.val() || {}).map(([k, v]) => ({id:k, ...v})).sort((a, b) => b.ts - a.ts);
+    inboxN = inbox.filter(m => !m.read).length;
+    document.querySelectorAll(".bell").forEach(el => el.innerHTML = "🔔" + (inboxN ? `<b>${inboxN}</b>` : ""));
+  }, () => {});
+}
+const COLS = ["#ff7a5c","#f2c14e","#7bc47f","#4fd1c5","#4cc9f0","#7c9cff","#c084fc","#ff6fb5","#ff4d4d","#e6e6e6"];
+async function leaderboardHTML(){
+  const rows = [];
+  try{ const s = await get(query(ref(db, "users"), orderByChild("points"), limitToLast(50))); s.forEach(c => { rows.push({id:c.key, ...c.val()}); }); }
+  catch(e){ return '<p class="pill">Žebříček se nepodařilo načíst.</p>'; }
+  rows.sort((a, b) => (b.points || 0) - (a.points || 0));
+  let rk = 0, prev = null, mine = false;
+  const out = rows.map((u, i) => { const p = u.points || 0; if(p !== prev) rk = i + 1; prev = p; const me = u.id === U.uid; if(me) mine = true;
+    return `<div class="lb${me ? " me" : ""}"><span class="rk">${rk}.</span>${avatarHTML(u.avatar, u.name, 34)}<span class="lbn">${nmC(u.name, u.nc)}${tagB(u.tag)}${me ? '<span class="you">TY</span>' : ""}</span><span class="pts">${p} b</span></div>`; }).join("");
+  return (out || '<p class="pill">Zatím tu nikdo není.</p>') + (mine ? "" : `<p class="pill" style="margin-top:12px">Jsi mimo první 50. Tvoje body: ${U.points}.</p>`);
+}
+function shopHTML(){
+  const cur = shopCol !== null ? shopCol : (U.nc || "");
+  const nc = U.ncOwned
+    ? `<div class="card"><strong>Barva jména</strong><div class="pill">Vyber si barvu, kterou uvidí všichni hráči.</div>
+      <div class="sw">${COLS.map(c => `<button type="button" class="swb${cur === c ? " on" : ""}" style="background:${c}" data-act="pickcol" data-v="${c}" aria-label="${c}"></button>`).join("")}<button type="button" class="swb none${!cur ? " on" : ""}" data-act="pickcol" data-v="" aria-label="Výchozí">×</button></div>
+      <div class="prev">Náhled: <span class="chip" style="display:inline-flex;vertical-align:middle">${avatarHTML(U.avatar, U.name, 30)}<b>${nmC(U.name, cur)}</b>${tagB(U.tag)}</span></div>
+      <button class="main" data-act="savecol" style="width:100%">Uložit barvu</button></div>`
+    : `<div class="card row"><div><strong>Změna barvy jména</strong><div class="pill">Vlastní barva jména, kterou uvidí ostatní · 500 b</div></div><button class="main" data-act="buync" ${U.points < 500 ? "disabled" : ""}>${U.points < 500 ? "Chybí " + (500 - U.points) + " b" : "Koupit za 500 b"}</button></div>`;
+  const locked = ["Rámeček profilovky","Vlastní tag","Nová figurka"].map(t => `<div class="card row" style="opacity:.6"><div><strong>${t}</strong><div class="pill">Již brzy</div></div><button disabled>Zamčeno</button></div>`).join("");
+  return `<p class="pill">Máš ${U.points} bodů.</p>${nc}${locked}`;
+}
+async function account(tab){
+  if(!U) return login();
+  if(tab) acTab = tab;
+  try{ const p = (await get(ref(db, "users/" + U.uid))).val() || {}; U.points = p.points || 0; U.nc = p.nc || null; U.ncOwned = !!p.ncOwned; } catch(e){}
+  const tabs = [["p","Profil"],["l","Žebříček"],["s","Obchod"]];
+  let body;
+  if(acTab === "l") body = await leaderboardHTML();
+  else if(acTab === "s") body = shopHTML();
+  else body = `<div class="card"><label for="avf">Profilovka (uvidí ji ostatní hráči)</label><input id="avf" type="file" accept="image/*" style="margin-bottom:0"></div>
+    ${U.admin ? '<button class="main" data-act="admin" style="width:100%;margin-bottom:12px">Admin panel</button><p class="pill">Tvoje ID účtu: ' + esc(U.uid) + '</p>' : ""}
+    <div class="grid2"><button data-act="theme">Světlý / tmavý vzhled</button><button data-act="logout">Odhlásit se</button></div>`;
+  app.innerHTML = `<div class="row"><button class="back" data-act="menu">← Zpět do menu</button>${bell()}</div><h2>Můj účet</h2>
+    <div class="card chip" style="gap:16px">${avatarHTML(U.avatar, U.name, 72)}<div><div style="font:700 1.4rem Georgia,serif">${nmC(U.name, U.nc)}${tagB(U.tag)}</div><div class="pill">${U.points} bodů</div></div></div>
+    <div class="chips tabs">${tabs.map(([k, t]) => `<button class="chp${acTab === k ? " on" : ""}" data-act="actab" data-v="${k}">${t}</button>`).join("")}</div>${body}`;
+}
+async function buyNc(){
+  if(!U || U.ncOwned || U.points < 500) return;
+  try{
+    const pr = ref(db, "users/" + U.uid + "/points"), cur = (await get(pr)).val() || 0;
+    if(cur < 500) return toast("Nemáš dost bodů");
+    await set(pr, cur - 500);
+    await set(ref(db, "users/" + U.uid + "/ncOwned"), true);
+    U.points = cur - 500; U.ncOwned = true; shopCol = null; account("s"); toast("Koupeno! Teď si vyber barvu");
+  } catch(e){ toast("Nákup se nepovedl"); }
+}
+async function saveCol(){
+  if(!U || !U.ncOwned || shopCol === null) return toast("Nejdřív si vyber barvu");
+  try{ await set(ref(db, "users/" + U.uid + "/nc"), shopCol || null); U.nc = shopCol || null; shopCol = null; toast("Barva uložena"); account("s"); }
+  catch(e){ toast("Barvu se nepodařilo uložit"); }
+}
+function inboxScreen(){
+  if(!U) return login();
+  app.innerHTML = `<button class="back" data-act="account">← Zpět na účet</button><h2>Oznámení</h2>` +
+    (inbox.length ? inbox.map(m => `<div class="card${m.read ? "" : " unread"}"><strong>${esc(m.title)}</strong><div class="pill">${new Date(m.ts).toLocaleString("cs-CZ")}</div><p style="white-space:pre-wrap;margin-bottom:0">${esc(m.text)}</p></div>`).join("") : '<p class="pill">Zatím nic nového.</p>');
+  inbox.filter(m => !m.read).forEach(m => update(ref(db, `inbox/${U.uid}/${m.id}`), {read:true}).catch(() => {}));
+}
+const imgData = (f, max, q) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => { const i = new Image(); i.onload = () => {
+  const k = Math.min(1, max / Math.max(i.width, i.height)), c = document.createElement("canvas"); c.width = Math.round(i.width * k); c.height = Math.round(i.height * k);
+  c.getContext("2d").drawImage(i, 0, 0, c.width, c.height); res(c.toDataURL("image/jpeg", q)); }; i.onerror = rej; i.src = r.result; }; r.onerror = rej; r.readAsDataURL(f); });
+function contact(){
+  cfg.kind = "idea";
+  if(!U){ app.innerHTML = `<button class="back" data-act="menu">← Zpět do menu</button><h2>Napiš nám</h2><div class="card"><p>Aby ti mohl majitel odpovědět, musíš být přihlášený.</p><button class="main" data-act="login" style="width:100%">Přihlásit se</button></div>`; return; }
+  app.innerHTML = `<button class="back" data-act="menu">← Zpět do menu</button><h2>Napiš nám</h2>
+    <div class="card vis"><label>Typ zprávy</label>${ddHTML("kind")}<div style="height:16px"></div>
+    <label for="ct">Nadpis</label><input id="ct" maxlength="100">
+    <label for="cx">Text</label><textarea id="cx" rows="5" maxlength="2000"></textarea>
+    <label for="cf">Příloha (obrázek, nepovinné)</label><input id="cf" type="file" accept="image/*">
+    <button class="main" data-act="sendrep" style="width:100%">Odeslat</button></div>
+    <p class="pill">Odpověď ti přijde na účet, uvidíš ji u zvonečku.</p>`;
+}
+async function sendReport(){
+  const t = $("#ct").value.trim(), x = $("#cx").value.trim(), f = $("#cf").files[0];
+  if(!t || !x) return toast("Vyplň nadpis i text");
+  const r = {uid:U.uid, name:U.name, kind:cfg.kind, title:t, text:x, ts:Date.now()};
+  try{ if(f) r.att = await imgData(f, 800, .7); await push(ref(db, "reports"), r); toast("Odesláno, díky!"); menu(); } catch(e){ toast("Odeslání se nepovedlo"); }
+}
+function uploadAvatar(f){
+  if(!f || !U) return;
+  const img = new Image(), r = new FileReader();
+  r.onload = () => { img.onload = async () => {
+    const c = document.createElement("canvas"); c.width = c.height = 72; const x = c.getContext("2d"), m = Math.min(img.width, img.height);
+    x.drawImage(img, (img.width - m)/2, (img.height - m)/2, m, m, 0, 0, 72, 72);
+    const d = c.toDataURL("image/jpeg", .75);
+    try{ await set(ref(db, "users/" + U.uid + "/avatar"), d); U.avatar = d; account(); toast("Profilovka uložena"); } catch(e){ toast("Profilovku se nepodařilo uložit"); }
+  }; img.src = r.result; };
+  r.readAsDataURL(f);
+}
+function addPts(n){ if(U) runTransaction(ref(db, "users/" + U.uid + "/points"), v => (v || 0) + n).then(() => { U.points += n; }).catch(() => {}); }
+function renderAdminQ(){
+  const el = $("#aq"); if(!el) return; $("#qn").textContent = DBQ.length;
+  el.innerHTML = DBQ.map(q => `<div class="card row"><div><strong>${esc(q.t)}</strong><div class="pill">${q.a ? "Pravda" : "Lež"} · ${esc(q.e)}</div></div><button data-act="delq" data-id="${esc(q.id.slice(1))}">Smazat</button></div>`).join("")
+    || `<p class="pill">Zatím žádné vlastní. Vestavěných otázek je ${BQ.length}.</p>`;
+}
+let adTab = "u";
+const KIND = {idea:"Nápad", bug:"Chyba", other:"Jiné"};
+function admin(tab){
+  if(!U || !U.admin) return;
+  if(tab) adTab = tab; stop();
+  const tabs = [["q","Otázky"],["u","Uživatelé"],["r","Hlášení"]];
+  const head = `<button class="back" data-act="account">← Zpět na účet</button><h2>Admin panel</h2><div class="chips tabs">${tabs.map(([k, t]) => `<button class="chp${adTab === k ? " on" : ""}" data-act="adtab" data-v="${k}">${t}</button>`).join("")}</div>`;
+  if(adTab === "q"){
+    app.innerHTML = head + `<div class="card"><h2 style="font-size:1.15rem">Nová otázka</h2><label for="qt">Tvrzení</label><input id="qt" maxlength="300">
+      <label for="qa">Správná odpověď</label><select id="qa"><option value="1">Pravda</option><option value="0">Lež</option></select>
+      <label for="qe">Vysvětlení nebo zdroj</label><input id="qe" maxlength="400"><button class="main" data-act="addq" style="width:100%">Přidat otázku</button></div>
+      <h2 style="margin-top:22px">Vlastní otázky (<span id="qn">0</span>)</h2><div id="aq"></div>`;
+    renderAdminQ();
+  } else if(adTab === "u"){
+    app.innerHTML = head + `<datalist id="tags"><option value="Sponzor"><option value="VIP"><option value="Tester"><option value="Moderátor"><option value="Majitel"></datalist><div id="au"><p class="pill">Načítám…</p></div>`;
+    unsub = onValue(ref(db, "users"), s => {
+      const v = s.val() || {}, el = $("#au"); if(!el) return;
+      el.innerHTML = Object.entries(v).map(([id, u]) => `<div class="card" data-u="${esc(id)}"><div class="chip">${avatarHTML(u.avatar, u.name, 40)}<div><strong>${nmC(u.name, u.nc)}</strong>${tagB(u.tag)}<div class="pill">${u.points || 0} bodů</div></div></div>
+        <div class="row" style="margin-top:10px"><input class="pi" type="number" value="10" min="1" style="margin:0;width:90px"><button data-act="padd">+ body</button><button data-act="psub">− body</button></div>
+        <div class="row" style="margin-top:8px"><input class="ti" list="tags" maxlength="16" placeholder="Tag (prázdné = bez tagu)" value="${esc(u.tag || "")}" style="margin:0"><button data-act="settag">Nastavit</button></div>
+        ${id === U.uid ? "" : '<button data-act="deluser" style="margin-top:8px;width:100%;color:var(--atk)">Smazat účet</button>'}</div>`).join("") || '<p class="pill">Žádní uživatelé.</p>';
+    });
+  } else {
+    app.innerHTML = head + `<div id="ar"><p class="pill">Načítám…</p></div>`;
+    unsub = onValue(ref(db, "reports"), s => {
+      const v = Object.entries(s.val() || {}).sort((a, b) => b[1].ts - a[1].ts), el = $("#ar"); if(!el) return;
+      el.innerHTML = v.map(([id, r]) => `<div class="card" data-r="${esc(id)}" data-u="${esc(r.uid)}"><div class="row"><strong>${esc(r.title)}</strong><span class="tg" style="margin:0">${KIND[r.kind] || "Jiné"}</span></div>
+        <div class="pill">${esc(r.name)} · ${new Date(r.ts).toLocaleString("cs-CZ")}${r.reply ? " · odpovězeno" : ""}</div>
+        <p style="white-space:pre-wrap">${esc(r.text)}</p>${OKAV.test(r.att || "") ? `<img src="${r.att}" style="max-width:100%;border-radius:12px;margin-bottom:10px" alt="">` : ""}
+        ${r.reply ? `<p class="pill">Tvoje odpověď: ${esc(r.reply)}</p>` : ""}
+        <textarea class="rt" rows="2" placeholder="Odpověď uživateli…" style="margin-bottom:10px"></textarea>
+        <div class="grid2"><button class="main" data-act="reply">${r.reply ? "Poslat znovu" : "Odeslat odpověď"}</button><button data-act="delrep" style="color:var(--atk)">Smazat hlášení</button></div></div>`).join("") || '<p class="pill">Žádná hlášení.</p>';
+    });
+  }
+}
+
+async function createRoom(name, rname, isPublic, mode, opts){
+  S.name = name; save();
+  const L = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const c = Array.from({length:4}, () => L[Math.random()*L.length|0]).join("");
+  await set(ref(db, "rooms/" + c), {name: rname || "Hra " + c, public: isPublic, mode, ms:(opts?.ms || 20) * 1000, mr:opts?.mr || 20, gd:opts?.gd !== false, status:"lobby", host:S.id, created:Date.now(),
+    players:{[S.id]:{name, role: (mode || "1v1") === "1v1" ? "A" : "D", av: U?.avatar || null, tag: U?.tag || null, nc: U?.nc || null}}});
+  enter(c);
+}
+async function joinRoom(c, name){
+  c = (c||"").toUpperCase().trim(); S.name = name; save();
+  const s = await get(ref(db, "rooms/" + c));
+  if(!s.exists()) return toast("Hra s tímto kódem neexistuje");
+  const v = s.val();
+  if(v.players && v.players[S.id]) return enter(c);
+  const cap = capOf(v.mode), pl = Object.values(v.players);
+  if(v.status !== "lobby" || pl.length >= cap) return toast("Hra je plná nebo už běží");
+  const free = rolesOf(v.mode).find(x => !pl.some(p => p.role === x));
+  await update(ref(db, `rooms/${c}/players/${S.id}`), {name, role: free, av: U?.avatar || null, tag: U?.tag || null, nc: U?.nc || null});
+  enter(c);
+}
+function enter(c){
+  stop(); code = c; lastEv = undefined; lastSig = "";
+  unsub = onValue(ref(db, "rooms/" + c), s => {
+    room = s.val();
+    if(!room){ menu(); toast("Hra skončila nebo byla zrušena"); return; }
+    drawRoom();
+    const ev = room.ev;
+    if(lastEv === undefined) lastEv = ev ? ev.id : null;
+    else if(ev && ev.id !== lastEv){ lastEv = ev.id; const m = myRole(), tx = ev[m] || ev[m[0]]; if(tx) pop(tx); if(ev.k === "catapult") boulder(ev.p0); }
+  });
+}
+const R = () => ref(db, "rooms/" + code);
+const myRole = () => room.players[S.id]?.role;
+let off = 0, lastEv, busy = "", lastSig = "";
+onValue(ref(db, ".info/serverTimeOffset"), s => off = s.val() || 0);
+const now = () => Date.now() + off, RMS = () => room.ms || 20000, MR = () => room.mr || 20;
+const evt = (a, d) => ({id: Math.random().toString(36).slice(2), A: a, D: d});
+const GD = {
+  blind:{n:"Páska na oči",d:"Soupeř bude 3 s slepý",i:"🩹"},
+  dizzy:{n:"Nízký tlak",d:"Soupeři se celé kolo motá hlava a tmí se mu před očima",i:"😵‍💫"},
+  trojan:{n:"Trojan",d:"Špeh zablokuje soupeři odpovídání v příštím kole",i:""},
+  parrot:{n:"Papoušek rádce",d:"Soupeři radí, ale ne vždy správně",i:"🦜"},
+  catapult:{n:"Katapult",d:"Útočník o 2 pole zpět, ty příště bez vylepšováku",i:"🪨"}
+};
+const CYC = {A:["blind","dizzy","trojan","parrot"], D:["blind","dizzy","catapult"]};
+const offer = r => CYC[r][((room.gc?.[r] || 1) - 1) % CYC[r].length];
+const SPY = '<svg viewBox="0 0 200 110" width="170" class="sp" aria-hidden="true"><ellipse cx="100" cy="106" rx="92" ry="3" fill="#0006"/><g fill="#a9742f" stroke="#5b3a14" stroke-width="2"><rect x="72" y="42" width="82" height="30" rx="10"/><rect x="78" y="70" width="8" height="26"/><rect x="96" y="70" width="8" height="26"/><rect x="124" y="70" width="8" height="26"/><rect x="142" y="70" width="8" height="26"/><path d="M146 48L168 20L184 28L160 60Z"/><path d="M168 20L172 8L180 22Z"/></g><path d="M80 52h66M80 60h66" stroke="#5b3a14" stroke-width="2"/><path d="M152 42q8-14 14-20" stroke="#3a2410" stroke-width="5" fill="none"/><circle cx="177" cy="30" r="2.5" fill="#222"/><path d="M20 54Q35 46 50 54L56 100H14Z" fill="#3b4a6b"/><path d="M30 52L35 66L40 52" fill="#cfd6ea"/><circle cx="35" cy="40" r="10" fill="#f1c9a5"/><rect x="25" y="37" width="20" height="6" rx="2" fill="#111"/><ellipse cx="35" cy="30" rx="19" ry="4" fill="#1c1c1c"/><rect x="25" y="17" width="20" height="13" rx="3" fill="#1c1c1c"/><path d="M48 62L74 68" stroke="#3b4a6b" stroke-width="8" stroke-linecap="round"/></svg>';
+function swapRoles(){
+  if(!room || room.status !== "lobby" || multi(room)) return;
+  const u = {}; for(const [id,p] of Object.entries(room.players)) u[`players/${id}/role`] = p.role === "A" ? "D" : "A";
+  update(R(), u);
+}
+const scramble = t => t.split(" ").map(w => `<span style="white-space:nowrap">${[...w].map((c,i) => `<i class="dzc" style="animation-delay:-${(i*37%11)/10}s">${esc(c)}</i>`).join("")}</span>`).join(" ");
+const nm = r => Object.values(room.players).find(p => p.role === r)?.name || r;
+const ACOL = {A1:"#ff7a5c", A2:"#f2c14e", A3:"#c084fc"};
+const SW = '<path d="M13 -6L13 -32" stroke="#fff" stroke-width="3" stroke-linecap="round"/>';
+const tf3 = (p, i, n = 3) => `translate(${PT(p).x + (i - (n-1)/2)*13}px,${PT(p).y-4}px)`;
+const pawns = (p, live) => typeof p === "object"
+  ? Object.keys(p).map((r,i,ks) => pawn(ACOL[r], tf3(p[r]||0, i, ks.length), live ? "pw_"+r : "", SW)).join("")
+  : pawn("#ff7a5c", tf(p), live ? "pawn" : "", SW);
+function takeDef(){
+  if(!room || room.status !== "lobby") return;
+  const me = myRole(); if(me === "D") return;
+  const d = Object.keys(room.players).find(id => room.players[id].role === "D"), u = {[`players/${S.id}/role`]:"D"};
+  if(d) u[`players/${d}/role`] = me;
+  update(R(), u);
+}
+function resolve3(){
+  const a = room.ans || {}, R4 = rolesOf(room.mode), need = R4.filter(r => !room.fx?.[r]?.trojan);
+  if(!(need.every(r => a[r]) || now() > room.rs + RMS() + 500)) return false;
+  const q = room.qq, ok = R4.filter(r => a[r] && a[r].v === q.a).sort((x,y) => a[x].t - a[y].t);
+  const P = {...room.pos}, pts = room.mode === "2v1" ? [2] : [2,1], lines = [];
+  ok.forEach((r,i) => { if(r !== "D" && pts[i]){ P[r] = Math.min(WIN, P[r] + pts[i]); lines.push(nm(r) + " +" + pts[i]); } });
+  const win = ATT(room.mode).filter(r => P[r] >= WIN).sort((x,y) => ok.indexOf(x) - ok.indexOf(y))[0];
+  if(win){ update(R(), {pos:P, status:"finished", winner:win}); return true; }
+  const di = ok.indexOf("D"), dOk = room.mode === "2v1" ? di === 0 : di > -1, bonus = room.mode !== "2v1" && ok.length >= 2 && ok[0] !== "D" && ok[1] !== "D";
+  const t = [lines.length ? lines.join(" · ") : "Nikdo nepostoupil", AN(q)];
+  if(di > -1 && di < pts.length) t[0] += " · obránce zabral " + (di+1) + ". místo";
+  const u = {pos:P, ra:serverTimestamp(), phase:dOk ? "reward" : "result", win:dOk ? "D" : null};
+  if(dOk) u["gc/D"] = (room.gc?.D || 0) + 1;
+  if(bonus && room.gd !== false){ const n = (room.gc?.A || 0) + 1, k = CYC.A[(n-1) % CYC.A.length]; u["gc/A"] = n; u.pfx = {D:{[k]:true}}; t[1] += " Útočníci mají výhodu: obránce dostane " + GD[k].n + "."; }
+  u.ev = evt(t, t);
+  update(R(), u); return true;
+}
+function reward3(k, r, tgt){
+  if(room.phase !== "reward" || room.win !== "D" || r !== "D") return;
+  if(k !== "step" && (room.gd === false || k !== offer("D"))) return;
+  const P = {...room.pos}; tgt = tgt || ATT(room.mode).sort((x,y) => P[y] - P[x])[0];
+  const p0 = P[tgt], p = {}; let t, c = false;
+  if(k === "step"){ P[tgt] = Math.max(0, P[tgt] - 1); t = ["Obránce odhodil hráče " + nm(tgt), "O 1 pole zpět"]; }
+  else if(k === "catapult"){ P[tgt] = Math.max(0, P[tgt] - 2); p.pnoG = "D"; c = true; t = ["🪨 Katapult zasáhl hráče " + nm(tgt), "O 2 pole zpět, obránce příště bez vylepšováku"]; }
+  else { const g = GD[k]; p.pfx = {...(room.pfx || {}), [tgt]:{...(room.pfx?.[tgt] || {}), [k]:true}}; t = [(g.i ? g.i + " " : "") + g.n + " → " + nm(tgt), "Soupeř ti poslal: " + g.d]; }
+  const ev = evt(t, t); if(c){ ev.k = "catapult"; ev.p0 = p0; }
+  nextRound({...p, pos:P, ev});
+}
+function startGame(){
+  const t = ["Souboj začíná!", "Odpověz rychleji než soupeř"];
+  update(R(), {status:"playing", phase:"answer", pos:multi(room) ? Object.fromEntries(ATT(room.mode).map(r => [r, 0])) : 0, rn:0, ...pick(), rs:serverTimestamp(), ans:null, ev:evt(t, t)});
+}
+function nextRound(p){
+  const pos = p.pos ?? room.pos;
+  const w3 = multi(room) && ATT(room.mode).find(r => pos[r] >= WIN);
+  if(w3) return update(R(), {...p, status:"finished", winner:w3});
+  if(pos >= WIN) return update(R(), {...p, status:"finished", winner:"A"});
+  if(room.rn + 1 >= MR()) return update(R(), {...p, status:"finished", winner:"D"});
+  update(R(), {...p, rn:room.rn+1, phase:"answer", ...pick(), rs:serverTimestamp(), ans:null, win:null,
+    fx:p.pfx || room.pfx || null, noG:p.pnoG || null, pfx:null, pnoG:null});
+}
+function answer(v){
+  const me = myRole();
+  if(room.phase !== "answer" || room.ans?.[me] || room.fx?.[me]?.trojan || now() > room.rs + RMS()) return;
+  set(ref(db, `rooms/${code}/ans/${me}`), {v, t:serverTimestamp()});
+}
+function resolve(){
+  if(multi(room)) return resolve3();
+  const a = room.ans || {}, need = ["A","D"].filter(r => !room.fx?.[r]?.trojan);
+  if(!(need.every(r => a[r]) || now() > room.rs + RMS() + 500)) return false;
+  const q = room.qq, ok = ["A","D"].filter(r => a[r] && a[r].v === q.a).sort((x,y) => a[x].t - a[y].t), w = ok[0];
+  if(!w){ const t = ["Nikdo nebodoval", AN(q)]; update(R(), {phase:"result", ra:serverTimestamp(), ev:evt(t, t)}); return true; }
+  const sec = ((a[w].t - room.rs) / 1000).toFixed(1), o = w === "A" ? "D" : "A";
+  update(R(), {phase:"reward", win:w, ra:serverTimestamp(), ["gc/" + w]:(room.gc?.[w] || 0) + 1,
+    ev:{id:Math.random().toString(36).slice(2), [w]:[`Byl jsi nejrychlejší! (${sec} s)`, AN(q)], [o]:[`${roleName(w)} byl rychlejší (${sec} s)`, AN(q)]}});
+  return true;
+}
+function reward(k, r, tgt){
+  if(multi(room)) return reward3(k, r, tgt);
+  if(room.phase !== "reward" || room.win !== r) return;
+  if(k !== "step" && (room.gd === false || k !== offer(r))) return;
+  const o = r === "A" ? "D" : "A", p = {}; let pos = room.pos, ev;
+  if(k === "step"){
+    pos = r === "A" ? pos + 1 : Math.max(0, pos - 1);
+    ev = r === "A" ? evt(["Postupuješ o 1 pole","Hrad je blíž"], ["Útočník postoupil","O 1 pole blíž k hradu"])
+                   : evt(["Obránce tě posunul zpět!","Zpět o 1 pole"], ["Odhodil jsi útočníka","O 1 pole zpět"]);
+  } else {
+    const g = GD[k];
+    if(k === "catapult"){
+      pos = Math.max(0, pos - 2); p.pnoG = r;
+      ev = evt(["🪨 Katapult tě odhodil!","O 2 pole zpět"], ["🪨 Katapult odpálen!","Útočník −2 pole, příště bez vylepšováku"]); ev.k = "catapult"; ev.p0 = room.pos;
+    } else {
+      p.pfx = {[o]:{[k]:true}};
+      const mine = [(g.i ? g.i + " " : "") + g.n, "Použito na soupeře"], his = [(g.i ? g.i + " " : "") + g.n + "!", "Soupeř ti poslal: " + g.d];
+      ev = r === "A" ? evt(mine, his) : evt(his, mine);
+    }
+  }
+  nextRound({...p, pos, ev});
+}
+function pop(t){ const d = document.createElement("div"); d.className = "pop"; d.innerHTML = `<b>${esc(t[0])}</b><span>${esc(t[1]||"")}</span>`; document.body.appendChild(d); setTimeout(() => d.remove(), 3000); }
+function boulder(p0){
+  const sc = $(".sc"); if(!sc) return;
+  const e = document.createElement("div"); e.className = "boulder"; e.textContent = "🪨"; e.style.left = "87%"; e.style.top = "45%"; sc.appendChild(e);
+  const q = PT(p0); requestAnimationFrame(() => requestAnimationFrame(() => { e.style.left = q.x/6.4 + "%"; e.style.top = (q.y-14)/2.4 + "%"; }));
+  setTimeout(() => e.remove(), 1300);
+}
+setInterval(() => {
+  if(!room || room.status !== "playing" || !room.rs) return;
+  const t = now();
+  if(room.phase === "answer"){
+    const l = Math.max(0, RMS() - (t - room.rs)), b = $("#bar"), tm = $("#tm");
+    if(b){ b.style.width = l/RMS()*100 + "%"; b.style.background = l < 5000 ? "var(--atk)" : "var(--ac)"; }
+    if(tm) tm.textContent = Math.ceil(l/1000) + " s";
+  }
+  if(room.host !== S.id) return;
+  const key = room.rn + room.phase; if(busy === key) return;
+  let go = false;
+  if(room.phase === "answer") go = resolve();
+  else if(room.phase === "result" && room.ra && t > room.ra + 3500){ nextRound({}); go = true; }
+  else if(room.phase === "reward" && room.ra && t > room.ra + 20000){ reward("step", room.win); go = true; }
+  if(go) busy = key;
+}, 250);
+async function leave(){
+  if(room && code){
+    if(room.host === S.id || room.status !== "lobby") await remove(R());
+    else await remove(ref(db, `rooms/${code}/players/${S.id}`));
+  }
+  menu();
+}
+
+/* ---------- Vykreslení hry ---------- */
+function drawRoom(){
+  const ps = Object.entries(room.players), me = myRole(), n3 = multi(room), CAP = capOf(room.mode);
+  const head = `<button class="back" data-act="leave">← Opustit hru</button>`;
+  document.body.classList.remove("dz");
+  if(room.status === "lobby"){
+    app.innerHTML = head + `<h2>${esc(room.name)}</h2>
+      <p class="sub">${room.public === false ? "Soukromá hra. Pošli kamarádovi tento kód." : "Veřejná hra. Soupeř ji najde v seznamu, nebo mu pošli kód."}</p>
+      <div class="card"><div class="code">${code}</div></div>
+      <p class="pill">${(room.ms || 20000) / 1000} s na otázku · ${room.mr || 20} kol · vylepšováky ${room.gd === false ? "vypnuté" : "zapnuté"}</p>
+      <div class="card">${ps.map(([,p]) => `<div class="row"><span class="chip">${avatarHTML(p.av, p.name, 36)}<span>${nmC(p.name, p.nc)}${tagB(p.tag)}</span></span><span class="pill">${roleName(p.role)}</span></div>`).join("")}
+      ${ps.length < CAP ? `<p class="pill" style="margin-bottom:0">Čekám na hráče (${ps.length}/${CAP})…</p>` : ""}</div>
+      ${n3 ? (me === "D" ? "" : '<button data-act="takedef" style="width:100%;margin-bottom:12px">Chci být obránce</button>') : '<button data-act="swap" style="width:100%;margin-bottom:12px">⇄ Vyměnit role (útočník ↔ obránce)</button>'}
+      ${room.host === S.id ? `<button class="main" data-act="start" style="width:100%" ${ps.length<CAP?"disabled":""}>Spustit hru</button>` : '<p class="pill">Hostitel spustí hru.</p>'}`;
+    return;
+  }
+  if(room.status === "finished"){
+    const won = room.winner === me;
+    if(won && U && !paid[code]){ paid[code] = 1; addPts(10); }
+    app.innerHTML = head + scene(room.pos,false) + `<h1>${won ? "Vyhráváš!" : "Tentokrát ne"}</h1>${won ? (U ? '<p class="sub">+10 bodů na tvůj účet</p>' : '<p class="sub">Přihlas se a za výhry budeš dostávat body.</p>') : ""}
+      <p class="sub">${room.winner === "D" ? "Obránce ubránil hrad." : room.winner === "A" ? "Útočník dobyl hrad." : esc(nm(room.winner)) + " dobyl hrad jako první."}</p>
+      <button class="main" data-act="leave" style="width:100%">Zpět do menu</button>`;
+    return;
+  }
+  if(!$("#panel")){ lastSig = ""; app.innerHTML = head + `<div class="row" style="margin-bottom:10px"><span class="pill" id="top"></span><span class="pill" id="tm"></span></div><div class="sc">${scene(room.pos,true)}</div><div class="pill" id="lg" style="margin-top:8px"></div><div class="bar"><i id="bar"></i></div><div id="panel"></div>`; }
+  $("#top").textContent = `Jsi ${roleName(me).toLowerCase()} · kolo ${room.rn+1}/${MR()}${n3 ? "" : " · pole " + room.pos + "/" + WIN}`;
+  if(n3){
+    ATT(room.mode).forEach((r,i,ks) => { const e = $("#pw_" + r); if(e) e.style.transform = tf3(room.pos[r] || 0, i, ks.length); });
+    $("#lg").innerHTML = ATT(room.mode).map(r => `<span style="color:${ACOL[r]}">●</span> ${esc(nm(r))} ${room.pos[r] || 0}/${WIN}`).join(" &nbsp; ");
+  } else $("#pawn").style.transform = tf(room.pos);
+  const o = me === "A" ? "D" : "A", fx = room.fx?.[me] || {};
+  document.body.classList.toggle("dz", !!fx.dizzy && room.phase === "answer");
+  const sig = [room.rn, room.phase, !!room.ans?.[me], !!room.ans?.[o], Object.keys(room.ans || {}).length, room.win, room.noG].join("|");
+  if(sig === lastSig) return; lastSig = sig;
+  const q = room.qq; let h;
+  if(room.phase === "answer"){
+    const done = room.ans?.[me], left = fx.blind ? 3000 - (now() - room.rs) : 0;
+    const b = ['<button class="main" data-act="ans" data-v="1">Pravda</button>', '<button data-act="ans" data-v="0">Lež</button>']; 
+    h = `<div class="card turn ${me}">
+      ${left > 0 ? `<div class="tpw" style="animation-delay:${Math.max(0,left-300)}ms"><div class="tp">PÁSKA</div><div class="tp">PÁSKA</div><div class="tp">PÁSKA</div></div>` : ""}
+      ${fx.parrot ? `<div class="pb">🦜 Poradím ti: ${room.rn % 2 ? "Pravda" : "Lež"}!</div>` : ""}
+      <div class="q">${fx.dizzy ? scramble(q.t) : esc(q.t)}</div>
+      <div class="ab">${done ? `<p class="pill">Odpověď odeslána. ${n3 ? "Odpověděli " + Object.keys(room.ans || {}).length + " z " + CAP + "." : room.ans?.[o] ? "Soupeř už odpověděl." : "Čekám na soupeře…"}</p>` : `<div class="grid2">${b.join("")}</div>`}
+      ${fx.trojan ? `<div class="spy"><div>${SPY}<br><b>Trojský kůň zablokoval tvoje odpovědi</b></div></div>` : ""}
+      </div></div>`;
+  } else if(room.phase === "result"){
+    h = `<div class="card"><div class="q">${esc(q.t)}</div><p class="pill">Další kolo začíná…</p></div>`;
+  } else if(room.win === me && n3){
+    const att = ATT(room.mode), lock = room.noG === "D", k = offer("D"), g = GD[k];
+    const row = (act, dis) => `<div class="grid3">${att.map(r => `<button class="opt" data-act="rw3" data-k="${act}" data-t="${r}" ${dis ? "disabled" : ""} style="justify-content:center;color:${ACOL[r]}"><b>${esc(nm(r))}</b></button>`).join("")}</div>`;
+    h = `<div class="card turn D"><strong>Odpověděl jsi správně. Vyber útočníka:</strong><p class="pill" style="margin:10px 0 6px">Odhodit o 1 pole</p>${row("step", false)}${room.gd === false ? "" : `<p class="pill" style="margin:10px 0 6px">${g.n}: ${g.d}</p>${row(k, lock)}`}${lock && room.gd !== false ? '<p class="pill">Po katapultu nemůžeš v tomto kole použít vylepšovák.</p>' : ""}</div>`;
+  } else if(room.win === me){
+    const lock = room.noG === me;
+    h = `<div class="card turn ${me}"><strong>Byl jsi nejrychlejší. Vyber si odměnu:</strong><div class="opts">
+      <button class="main opt" data-act="rw" data-k="step"><b>${me === "A" ? "Postoupit o 1 pole" : "Odhodit útočníka o 1 pole"}</b></button>` +
+      (() => { if(room.gd === false) return ""; const k = offer(me), g = GD[k], ic = g.i || SPY.replace(' class="sp"', "").replace('width="170"', 'width="64"');
+        return `<button class="opt" data-act="rw" data-k="${k}" ${lock ? "disabled" : ""}><span class="ic">${ic}</span><span><b>${g.n}</b><br><small>${g.d}</small></span></button>`; })() +
+      `</div>${lock ? '<p class="pill">Po katapultu nemůžeš v tomto kole použít vylepšovák.</p>' : ""}</div>`;
+  } else h = `<div class="card"><p class="pill">${roleName(room.win)} vybírá odměnu…</p></div>`;
+  $("#panel").innerHTML = h;
+}
+
+/* ---------- Události ---------- */
+document.addEventListener("click", async e => {
+  if(!e.target.closest(".dd")) document.querySelectorAll(".dd.open").forEach(d => d.classList.remove("open"));
+  const b = e.target.closest("[data-act]"); if(!b) return;
+  const a = b.dataset.act;
+  if(a === "menu") menu();
+  else if(a === "find") find();
+  else if(a === "create") create();
+  else if(a === "login") login();
+  else if(a === "account") account();
+  else if(a === "admin") admin();
+  else if(a === "adtab") admin(b.dataset.v);
+  else if(a === "actab") account(b.dataset.v);
+  else if(a === "inbox") inboxScreen();
+  else if(a === "contact") contact();
+  else if(a === "sendrep") sendReport();
+  else if(a === "buync") buyNc();
+  else if(a === "savecol") saveCol();
+  else if(a === "pickcol"){ shopCol = b.dataset.v; document.querySelectorAll(".swb").forEach(x => x.classList.toggle("on", x.dataset.v === shopCol)); const pv = $(".prev b"); if(pv) pv.innerHTML = nmC(U.name, shopCol); }
+  else if(a === "ddt"){ const d = b.closest(".dd"), o = d.classList.contains("open"); document.querySelectorAll(".dd.open").forEach(x => x.classList.remove("open")); if(!o) d.classList.add("open"); }
+  else if(a === "ddo"){ const d = b.closest(".dd"), id = d.dataset.dd; cfg[id] = b.dataset.v; d.outerHTML = ddHTML(id); }
+  else if(a === "chp"){ const g = b.closest(".chips"); cfg[g.dataset.ch] = b.dataset.v; g.querySelectorAll(".chp").forEach(x => x.classList.toggle("on", x === b)); }
+  else if(a === "adv"){ b.classList.toggle("open"); $("#adv").classList.toggle("open"); }
+  else if(a === "reply"){ const c = b.closest("[data-r]"), t = c.querySelector(".rt").value.trim(); if(!t) return toast("Napiš odpověď");
+    const title = c.querySelector("strong").textContent;
+    push(ref(db, "inbox/" + c.dataset.u), {title:"Odpověď: " + title, text:t, ts:Date.now(), read:false})
+      .then(() => update(ref(db, "reports/" + c.dataset.r), {reply:t, repTs:Date.now()})).then(() => toast("Odpověď odeslána")).catch(() => toast("Nepovedlo se odeslat")); }
+  else if(a === "delrep"){ if(confirm("Smazat toto hlášení?")) remove(ref(db, "reports/" + b.closest("[data-r]").dataset.r)); }
+  else if(a === "dologin") doLogin();
+  else if(a === "doreg") doReg();
+  else if(a === "logout"){ goMenu = true; signOut(auth); }
+  else if(a === "theme"){ S.theme = S.theme === "dark" ? "light" : "dark"; save(); applyTheme(); }
+  else if(a === "addq"){ const t = $("#qt").value.trim(); if(!t) return toast("Napiš tvrzení");
+    push(ref(db, "questions"), {t, a:$("#qa").value === "1", e:$("#qe").value.trim()}).then(() => { $("#qt").value = ""; $("#qe").value = ""; toast("Otázka přidána"); }).catch(() => toast("Nepovedlo se, zkontroluj pravidla databáze")); }
+  else if(a === "delq") remove(ref(db, "questions/" + b.dataset.id));
+  else if(a === "padd" || a === "psub"){ const row = b.closest("[data-u]"), n = Math.abs(parseInt(row.querySelector(".pi").value) || 0) * (a === "psub" ? -1 : 1);
+    runTransaction(ref(db, "users/" + row.dataset.u + "/points"), v => Math.max(0, (v || 0) + n)); }
+  else if(a === "settag"){ const row = b.closest("[data-u]"); update(ref(db, "users/" + row.dataset.u), {tag:row.querySelector(".ti").value.trim() || null}); }
+  else if(a === "deluser"){ if(confirm("Opravdu smazat tento účet?")) remove(ref(db, "users/" + b.closest("[data-u]").dataset.u)); }
+  else if(a === "mok"){ const n = $("#mn").value.trim(); if(!n) return toast("Napiš přezdívku"); closeModal(n); }
+  else if(a === "mcancel") closeModal(null);
+  else if(a === "join"){ const n = await askName(); if(n) joinRoom(b.dataset.code, n); }
+  else if(a === "joincode"){ const c = $("#jc").value.trim(); if(c.length < 4) return toast("Kód má 4 písmena"); const n = await askName(); if(n) joinRoom(c, n); }
+  else if(a === "docreate"){ const rn = $("#rn").value.trim(); const n = await askName(); if(n) createRoom(n, rn, cfg.pub === "1", cfg.mode, {ms:+cfg.ms, mr:+cfg.mr, gd:cfg.gd === "1"}); }
+  else if(a === "swap") swapRoles();
+  else if(a === "start") startGame();
+  else if(a === "ans") answer(b.dataset.v === "1");
+  else if(a === "rw") reward(b.dataset.k, myRole());
+  else if(a === "rw3") reward(b.dataset.k, myRole(), b.dataset.t);
+  else if(a === "takedef") takeDef();
+  else if(a === "leave") leave();
+});
+document.addEventListener("change", e => { if(e.target.id === "avf") uploadAvatar(e.target.files[0]); });
+document.addEventListener("keydown", e => { if(e.key === "Enter" && $("#mn")) $('[data-act="mok"]').click(); else if(e.key === "Enter" && $("#lp")) $('[data-act="dologin"]').click(); });
+
+setTimeout(() => { if(goMenu){ goMenu = false; menu(); } }, 2500);
+</script>
+</body>
+</html>
